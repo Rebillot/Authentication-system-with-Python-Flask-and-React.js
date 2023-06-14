@@ -2,15 +2,21 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
-from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.utils import APIException, generate_sitemap, generate_token, validate_token
+from api.models import db, User
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+import jwt
+import datetime
+
+
+
 
 #from models import Person
 
@@ -62,6 +68,53 @@ def serve_any_other_file(path):
     response = send_from_directory(static_file_dir, path)
     response.cache_control.max_age = 0 # avoid cache memory
     return response
+
+@app.route('/singup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+    if user:
+        return jsonify(message='User already exists'), 400
+    hashed_password = generate_password_hash(data['password'], method='sha256')
+    new_user = User(email=data['email'], password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+    if not user:
+        return jsonify({user:'email invalid'})
+    if check_password_hash(user.password, data['password']):
+        token = generate_token(user.id, user.mail)
+        return jsonify(token=token), 200
+    else:
+        return jsonify(message='no no no, thats no the magic word')
+
+
+@app.route('/private', methods=['GET'])
+def private():
+    auth_header = request.headers.get('Authorization')
+    if auth_header:
+        auth_token= auth_header.split(" ")[1]
+    else:
+        return jsonify(message='Token is missing'), 401
+
+    user_id = validate_token(auth_token)
+    if isinstance(user_id):
+        return jsonify(message=user_id), 401
+    
+    user = User.query.filter_by(id=user_id).first()
+
+    return jsonify(message='Successfully accessed protected route!', user=user.serialize())
+
+
+
+
+
 
 
 # this only runs if `$ python src/main.py` is executed

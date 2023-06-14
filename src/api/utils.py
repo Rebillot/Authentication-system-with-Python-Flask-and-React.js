@@ -1,4 +1,10 @@
-from flask import jsonify, url_for
+import jwt
+import datetime
+import os
+from flask import jsonify, Flask, url_for
+from api.models import User
+
+
 
 class APIException(Exception):
     status_code = 400
@@ -39,3 +45,47 @@ def generate_sitemap(app):
         <p>Start working on your project by following the <a href="https://start.4geeksacademy.com/starters/full-stack" target="_blank">Quick Start</a></p>
         <p>Remember to specify a real endpoint path like: </p>
         <ul style="text-align: left;">"""+links_html+"</ul></div>"
+
+
+
+def generate_token(user_id, user_mail):
+        try:
+            my_secret = os.environ.get('JWT_SECRET_KEY')
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+                'iat': datetime.datetime.utcnow(),
+                'sub': user_id,
+                'email': user_mail
+            }
+            return jwt.encode(payload, my_secret, algorithm='HS256')
+        except jwt.ExpiredSignatureError:
+            return 'Token expired. Please log in again.'
+        except jwt.InvalidTokenError:
+            return 'Invalid token. Please log in again.'
+        except Exception as e:
+            return str(e)
+
+
+
+def validate_token(token):
+        try:
+            my_secret = os.environ.get('JWT_SECRET_KEY')
+            payload = jwt.decode(token, my_secret, algorithms=['HS256'])
+
+            user = User.query.filter_by(id=payload['sub']).first()
+            if user:
+                return jsonify(valid=True, user=user.serialize())
+            else:
+                return jsonify(valid=False, message='User not found')
+
+        except jwt.ExpiredSignatureError:
+            return jsonify(valid=False, message='Token expired. Please log in again.')
+        except jwt.InvalidTokenError:
+            return jsonify(valid=False, message='Invalid token. Please log in again.')
+        except Exception as e:
+            return jsonify(valid=False, message=str(e))
+
+
+
+        
+
