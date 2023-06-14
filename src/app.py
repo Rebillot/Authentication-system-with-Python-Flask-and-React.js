@@ -18,6 +18,8 @@ import datetime
 
 
 
+
+
 #from models import Person
 
 ENV = os.getenv("FLASK_ENV")
@@ -79,6 +81,7 @@ def signup():
     new_user = User(email=data['email'], password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
+    return jsonify(message='User created successfully'), 201
 
 
 
@@ -89,7 +92,7 @@ def login():
     if not user:
         return jsonify({user:'email invalid'})
     if check_password_hash(user.password, data['password']):
-        token = generate_token(user.id, user.mail)
+        token = generate_token(user.id, user.email)
         return jsonify(token=token), 200
     else:
         return jsonify(message='no no no, thats no the magic word')
@@ -104,9 +107,7 @@ def private():
         return jsonify(message='Token is missing'), 401
 
     user_id = validate_token(auth_token)
-    if isinstance(user_id):
-        return jsonify(message=user_id), 401
-    
+
     user = User.query.filter_by(id=user_id).first()
 
     return jsonify(message='Successfully accessed protected route!', user=user.serialize())

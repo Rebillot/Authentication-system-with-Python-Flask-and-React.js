@@ -49,41 +49,41 @@ def generate_sitemap(app):
 
 
 def generate_token(user_id, user_mail):
-        try:
-            my_secret = os.environ.get('JWT_SECRET_KEY')
-            payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
-                'iat': datetime.datetime.utcnow(),
-                'sub': user_id,
-                'email': user_mail
-            }
-            return jwt.encode(payload, my_secret, algorithm='HS256')
-        except jwt.ExpiredSignatureError:
-            return 'Token expired. Please log in again.'
-        except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
-        except Exception as e:
-            return str(e)
+    try:
+        my_secret = os.environ.get('JWT_SECRET_KEY')
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            'iat': datetime.datetime.utcnow(),
+            'sub': user_id,
+            'email': user_mail
+        }
+        return jwt.encode(payload, my_secret, algorithm='HS256')
+    except jwt.ExpiredSignatureError:
+        return 'Token expired. Please log in again.'
+    except jwt.InvalidTokenError:
+        return 'Invalid token. Please log in again.'
+    except Exception as e:
+        return str(e)
 
 
 
 def validate_token(token):
-        try:
-            my_secret = os.environ.get('JWT_SECRET_KEY')
-            payload = jwt.decode(token, my_secret, algorithms=['HS256'])
+    try:
+        my_secret = os.environ.get('JWT_SECRET_KEY')
+        payload = jwt.decode(token, my_secret, algorithms=['HS256'])
 
-            user = User.query.filter_by(id=payload['sub']).first()
-            if user:
-                return jsonify(valid=True, user=user.serialize())
-            else:
-                return jsonify(valid=False, message='User not found')
+        user = User.query.filter_by(id=payload['sub']).first()
+        if user:
+            return user.id
+        else:
+            return None
 
-        except jwt.ExpiredSignatureError:
-            return jsonify(valid=False, message='Token expired. Please log in again.')
-        except jwt.InvalidTokenError:
-            return jsonify(valid=False, message='Invalid token. Please log in again.')
-        except Exception as e:
-            return jsonify(valid=False, message=str(e))
+    except jwt.ExpiredSignatureError:
+        return jsonify(valid=False, message='Token expired. Please log in again.')
+    except jwt.InvalidTokenError:
+        return jsonify(valid=False, message='Invalid token. Please log in again.')
+    except Exception as e:
+        return jsonify(valid=False, message=str(e))
 
 
 
