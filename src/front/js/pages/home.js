@@ -11,7 +11,7 @@ export const Home = () => {
 			<h1>Hello Rigo!!</h1>
 			<p>
 				<img src={rigoImageUrl} />
-			</p>
+			{/* </p>
 			<div className="alert alert-info">
 				{store.message || "Loading message from the backend (make sure your python backend is running)..."}
 			</div>
@@ -19,8 +19,12 @@ export const Home = () => {
 				This boilerplate comes with lots of documentation:{" "}
 				<a href="https://start.4geeksacademy.com/starters/react-flask">
 					Read documentation
-				</a>
+				</a> */}
 			</p>
+			<a href="/signup" class="btn btn-primary">Sign Up</a>
+  			<a href="/login" class="btn btn-warning">Log In</a>
+
+
 		</div>
 	);
 };

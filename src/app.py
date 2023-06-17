@@ -71,7 +71,7 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0 # avoid cache memory
     return response
 
-@app.route('/singup', methods=['POST'])
+@app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
     user = User.query.filter_by(email=data['email']).first()
@@ -82,6 +82,13 @@ def signup():
     db.session.add(new_user)
     db.session.commit()
     return jsonify(message='User created successfully'), 201
+
+@app.route('/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    serialized_users = [user.serialize() for user in users]
+    return jsonify(serialized_users)
+
 
 
 
@@ -98,20 +105,24 @@ def login():
         return jsonify(message='no no no, thats no the magic word')
 
 
-@app.route('/private', methods=['GET'])
+@app.route('/private', methods=['POST'])
 def private():
     auth_header = request.headers.get('Authorization')
-    if auth_header:
-        auth_token= auth_header.split(" ")[1]
-    else:
+    if not auth_header:
         return jsonify(message='Token is missing'), 401
 
+    auth_token = auth_header.split(" ")[1]
     user_id = validate_token(auth_token)
+
+    if not user_id: 
+        return jsonify(message='Invalid or expired token'), 401
 
     user = User.query.filter_by(id=user_id).first()
 
-    return jsonify(message='Successfully accessed protected route!', user=user.serialize())
+    if not user:
+        return jsonify(message='User not found'), 404
 
+    return jsonify(message='Successfully accessed protected route!', user=user.serialize())
 
 
 
